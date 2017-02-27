@@ -209,15 +209,14 @@ request_header: token ows t_colon ows text ows t_crlf {
  *
  */
 
-request: request: request_line request_header { YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
+request: request_line request_header { YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header request_header request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header request_header request_header request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
  | request_line request_header request_header request_header request_header request_header request_header request_header {YPRINTF("parsing_request: Matched Success.\n");return SUCCESS;}
- return SUCCESS;
-};
+
 
 %%
 
