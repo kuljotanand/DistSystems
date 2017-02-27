@@ -25,7 +25,8 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-char *request_finder(Request_header *, int);
+// char *request_finder(Request_header *, char *, int);
+char * get_header_value(Request * , char * );
 
 int main(void)
 {
@@ -44,7 +45,7 @@ int main(void)
 	char remoteIP[INET6_ADDRSTRLEN];
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
-    int i, j, rv;
+    int i, rv;
 
 	struct addrinfo hints, *ai, *p;
 
@@ -150,7 +151,13 @@ int main(void)
                       printf ("%s\n", request->http_version);
                       printf ("%s\n", request->http_method);
                       printf ("%s\n", request->http_uri);
-                      printf ("\n\n%s\n\n", request->headers[0].header_value);
+                      printf ("%s\n\n", request->headers[0].header_value);
+
+                      char * test = malloc(60);
+                      strcpy(test, get_header_value(request, "Host"));
+                      // test = get_header_value(request, "Host");
+                      printf("%s\n", test);
+                      printf ("%s \n", get_header_value(request, "User-Agent"));
 
                         // we got some data from a client
 												if (send(i, buf, nbytes, 0) == -1) {
@@ -164,18 +171,33 @@ int main(void)
 
     return 0;
 }
-char * request_finder(Request_header *fields, int num_lines) {
-  int i;
-  for (i=0; i < num_lines; i++) {
-    if (fields[i].header_name == "Connection") {
-      // found
-      return fields[i].header_value;
-    } else if (fields[i].header_name == "Accept-Encoding") {
-      // found
-      return fields[i].header_value;
-    } else if (fields[i].header_name == "Content-Length") {
-      // found
-      return fields[i].header_value;
-    }
-  }
+// char *request_finder(Request_header *fields, char *name, int num_lines) {
+//   int i;
+//   for (i=0; i < num_lines; i++) {
+//     printf("%s\n", fields[i].header_name);
+//     printf("1: %s", fields[i].header_value);
+//     if (strcmp(name, fields[i].header_name) == 0) {
+//       printf("2: %s", fields[i].header_value);
+//       return fields[i].header_value;
+//     }
+//   }
+//   return NULL;
+// }
+
+char * get_header_value(Request * request, char * name) {
+   int index = 0;
+
+   for(index = 0; index < request->header_count; index++) {
+     if(strcmp(request->headers[index].header_name, name) == 0) {
+       return request->headers[index].header_value;
+     }
+   }
+
+   // if header not set, return special string
+   char * nullstr = "NULL";
+   return nullstr;
+}
+
+codeMatcher() {
+  switch()
 }
