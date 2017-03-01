@@ -1,106 +1,17 @@
-/*
-** selectserver.c -- a cheezy multiperson chat server
-*/
+#include "init.h"
+#include "parse.h"
+#include "selectHelpers.c"
+#include "parseMagic.c"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <parse.h>
+char *get_header_value(Request *, char *);
+void getSocketAndBindAndListen();
 
-#define PORT "9037"   // port we're listening on
-
-// get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
-
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
-// char *request_finder(Request_header *, char *, int);
-char * get_header_value(Request * , char * );
-
-int main(void)
-{
-    fd_set master;    // master file descriptor list
-    fd_set read_fds;  // temp file descriptor list for select()
-    int fdmax;        // maximum file descriptor number
-
-    int listener;     // listening socket descriptor
-    int newfd;        // newly accept()ed socket descriptor
-    struct sockaddr_storage remoteaddr; // client address
-    socklen_t addrlen;
-
-    char buf[256];    // buffer for client data
-    int nbytes;
-
-	char remoteIP[INET6_ADDRSTRLEN];
-
-    int yes=1;        // for setsockopt() SO_REUSEADDR, below
-    int i, rv;
-
-	struct addrinfo hints, *ai, *p;
-
-    FD_ZERO(&master);    // clear the master and temp sets
-    FD_ZERO(&read_fds);
-
-	// get us a socket and bind it
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0) {
-		fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
-		exit(1);
-	}
-
-	for(p = ai; p != NULL; p = p->ai_next) {
-    	listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-		if (listener < 0) {
-			continue;
-		}
-
-		// lose the pesky "address already in use" error message
-		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
-		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
-			close(listener);
-			continue;
-		}
-
-		break;
-	}
-
-	// if we got here, it means we didn't get bound
-	if (p == NULL) {
-		fprintf(stderr, "selectserver: failed to bind\n");
-		exit(2);
-	}
-
-	freeaddrinfo(ai); // all done with this
-
-    // listen
-    if (listen(listener, 10) == -1) {
-        perror("listen");
-        exit(3);
-    }
-
-    // add the listener to the master set
-    FD_SET(listener, &master);
-
-    // keep track of the biggest file descriptor
-    fdmax = listener; // so far, it's this one
+int main(void) {
+	fprintf(stdout, "----- lisod server activated -----\n");
+	getSocketAndBindAndListen();
 
     // main loop
-    for(;;) {
+    while(1) {
         read_fds = master; // copy it
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
@@ -144,60 +55,12 @@ int main(void)
                         close(i); // bye!
                         FD_CLR(i, &master); // remove from master set
                     } else {
-                      //kj - allocate space for response for header
-                      // char *headersize = char *calloc(8192)
-                      // kj - parse the request
-                      Request *request = parse(buf, sizeof(buf), i);
-                      printf ("%s\n", request->http_version);
-                      printf ("%s\n", request->http_method);
-                      printf ("%s\n", request->http_uri);
-                      printf ("%s\n\n", request->headers[0].header_value);
-
-                      char * test = malloc(60);
-                      strcpy(test, get_header_value(request, "Host"));
-                      // test = get_header_value(request, "Host");
-                      printf("%s\n", test);
-                      printf ("%s \n", get_header_value(request, "User-Agent"));
-
-                        // we got some data from a client
-												if (send(i, buf, nbytes, 0) == -1) {
-													perror("send");
-												}
+						// where the magic happens
+						parseMagic();
                     }
                 } // END handle data from client
             } // END got new incoming connection
         } // END looping through file descriptors
     } // END for(;;)--and you thought it would never end!
-
     return 0;
-}
-// char *request_finder(Request_header *fields, char *name, int num_lines) {
-//   int i;
-//   for (i=0; i < num_lines; i++) {
-//     printf("%s\n", fields[i].header_name);
-//     printf("1: %s", fields[i].header_value);
-//     if (strcmp(name, fields[i].header_name) == 0) {
-//       printf("2: %s", fields[i].header_value);
-//       return fields[i].header_value;
-//     }
-//   }
-//   return NULL;
-// }
-
-char * get_header_value(Request * request, char * name) {
-   int index = 0;
-
-   for(index = 0; index < request->header_count; index++) {
-     if(strcmp(request->headers[index].header_name, name) == 0) {
-       return request->headers[index].header_value;
-     }
-   }
-
-   // if header not set, return special string
-   char * nullstr = "NULL";
-   return nullstr;
-}
-
-codeMatcher() {
-  switch()
 }
