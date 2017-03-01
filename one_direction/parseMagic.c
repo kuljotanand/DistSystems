@@ -24,11 +24,13 @@ void parseMagic() {
 
     // strcpy(test, get_header_value(request, "Host"));
     // test = get_header_value(request, "Host");
-    printf ("%s \n", get_header_value(request, "User-Agent"));
+    // printf ("%s \n", get_header_value(request, "User-Agent"));
 
     char *avash = "avash";
     strcpy(buf, avash);
     printf("%s\n", avash);
+
+    
 
     // we got some data from a client
     if (send(i, buf, nbytes, 0) == -1) {
