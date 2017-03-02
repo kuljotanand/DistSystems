@@ -19,14 +19,4 @@ typedef struct {
 	int header_count;
 } Request;
 
-//HTTP Request Header
-// typedef struct {
-// 	char *Connection = 'keep-alive';
-// 	char *ContentType;
-// 	int ContentLength;
-// 	char *LastModified;
-// 	char *http_version;
-// 	char *message_body
-// } Response;
-
 Request* parse(char *buffer, int size,int socketFd);

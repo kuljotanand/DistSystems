@@ -1,5 +1,6 @@
 int getFileLen(Request *request) {
 	int len;
+	// char *slen;
 	FILE *fp = fopen(request->http_uri, "r");
 
 	if (!fp)  {
@@ -11,6 +12,8 @@ int getFileLen(Request *request) {
 	len = ftell(fp) + 1;
 	rewind(fp);
 	// fclose(fp);
+
+	// snprintf(slen, 12,"%d",len);
 	return len;
 }
 
@@ -76,24 +79,32 @@ char *tisHead(Request *req, char *resp) {
 		len = getFileLen(req);
 
 		if (len < 0 || isError) {
-			strcpy(resp,"HTTP/1.1 500 Internal Server Error");
-			return;
+			strcpy(resp, "HTTP/1.1 500 Internal Server Error");
+			// resp = malloc(strlen(bob));
 		} else if (!isError) {
-			strcpy(resp,"HTTP/1.1 200 OK");
+			strcpy(resp, "HTTP/1.1 200 OK");
 		}
 
 		strcat(resp, "\nServer: lisod/1.0");
 		strcat(resp, "\nConnection: keep-alive"); // \r\n
 		strcat(resp, "\nContent-length: ");
-		strcat(resp, len);
+		printf("%s\n", "holla1");
+		char lenStr[10];
+		sprintf(lenStr, "%d", len);
+		strcat(resp, lenStr);
+		printf("%s\n", "holla2");
 		strcat(resp, "\nContent-Type: ");
 		strcat(resp, getFileType(req));
+		printf("%s\n", "holla3");
 		strcat(resp, "\nDate: ");
 		strcat(resp, getDate());
+		printf("%s\n", "holla4");
 		strcat(resp, "\nLast-Modified: ");
 		strcat(resp, getLastMod(req, resp));
+		printf("%s\n", "holla5");
 		strcat(resp, "\r\n");
 	}
+	printf("%s\n", "outside");
 	return resp;
 }
 
@@ -105,24 +116,27 @@ char *tisPost(Request *req, char * resp) {
 	return "";
 }
 
-char *parseMagic(char *buf, Request *req) {
+char *parseMagic(char *buf, Request *req, char *sender) {
 	// we need to pass by ref
-	char *resp = "";
-	char *send = "";
+	char resp[1000];
 
     // look at the type of request HEAD, GET, POST
     if (strcmp(req->http_method, "HEAD") == 0) {
 		printf("responding to : %s\n", req->http_method);
-		send = tisHead(req, resp);
+		strcpy(sender, tisHead(req, resp));
 	} else if (strcmp(req->http_method, "GET") == 0) {
 		printf("responding to : %s\n", req->http_method);
-		send = tisGet(req, resp);
+		strcpy(sender, tisGet(req, resp));
 	} else if (strcmp(req->http_method, "POST") == 0) {
-		send = tisPost(req, resp);
+		printf("responding to : %s\n", req->http_method);
+		strcpy(sender, tisPost(req, resp));
 	} else {
+		printf("WTF did you send me?\n");
 		// not valid return 405: Method not allowed
 	}
-	return send;
+	printf("%s\n", "safely here");
+	// return "avash";
+	return sender;
 	// do something with send, namely send it
 		//  404, 'Not Found'
 	    //  411, 'Length Required'
