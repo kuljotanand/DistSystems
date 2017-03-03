@@ -21,13 +21,12 @@ char *getLastMod(Request *, char *);
 char *getDate();
 char *getFileType(Request *);
 const char *get_filename_ext(const char *);
-int getFileLen(Request *);
+int getFileLen(Request *, FILE *);
 
 #define PORT "9034"   // port we're listening on
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
+void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
     }
@@ -35,8 +34,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(void)
-{
+int main(void) {
     char hotMess[1000];
     char* fileType;
 
@@ -156,8 +154,8 @@ int main(void)
                         FD_CLR(i, &master); // remove from master set
                     } else {
                         // we got some data from a client
-                        printf("%s\n", "avash");
                         char sender[1000];
+
                         Request *req = parse(buf, sizeof(buf), i);
                         strcpy(hotMess, parseMagic(buf, req, sender));
 

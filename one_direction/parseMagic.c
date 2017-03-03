@@ -1,19 +1,10 @@
-int getFileLen(Request *request) {
+int getFileLen(Request *request, FILE *fp) {
 	int len;
-	// char *slen;
-	FILE *fp = fopen(request->http_uri, "r");
-
-	if (!fp)  {
-		perror ("Error opening file");
-		return(-1);
-	}
 
 	fseek(fp, 0, SEEK_END);
 	len = ftell(fp) + 1;
 	rewind(fp);
-	// fclose(fp);
 
-	// snprintf(slen, 12,"%d",len);
 	return len;
 }
 
@@ -46,19 +37,19 @@ char *getFileType(Request *req) {
 }
 
 char *getDate() {
-	char *temp;
-	time_t now = time(0);
-	struct tm gm = *gmtime(&now);
+	char temp[50];
+	time_t cur = time(0);
+	struct tm gm = *gmtime(&cur);
 	strftime(temp, sizeof(temp), "%a, %d %b %Y %H:%M:%S %Z", &gm);
 	return temp;
 }
 
 char *getLastMod(Request *req, char *resp) {
-	char *temp;
+	char temp[50];
 	struct stat attr;
 
-	time_t now = time(0);
-	struct tm gm = *gmtime(&now);
+	time_t cur = time(0);
+	struct tm gm = *gmtime(&cur);
 
 	stat(req->http_uri, &attr);
 	gmtime_r(&attr.st_mtime, &gm);
@@ -67,44 +58,54 @@ char *getLastMod(Request *req, char *resp) {
 }
 
 char *tisHead(Request *req, char *resp) {
-	// broad block, if at any point ../ then invalid
 	int isError = 0;
-	int len;
+	char len[100];
+	char *fname = (char *) malloc(100); // since we don't know the length of val
+	FILE *file;
 
-	if (!strstr(req->http_uri, "../")) {
+	// broad block, if at any point ../ then invalid
+	if (strstr(req->http_uri, "../")) {
 		isError = 1;
 	}
 
-	if (access(req->http_uri, F_OK) != -1) {
-		len = getFileLen(req);
+	fname = req->http_uri ? req->http_uri : "index.html";
 
+	if (strcmp(fname, "/") == 0) {
+		strcpy(fname, "index.html");
+	}
+
+	file = fopen(fname, "r");
+
+	// error checking
+	//  411, 'Length Required' for post
+	//  500, 'Not Found'
+	//  505, 'HTTP Version not supported'
+
+	if (file) {
 		if (len < 0 || isError) {
-			strcpy(resp, "HTTP/1.1 500 Internal Server Error");
+			strcpy(resp, "HTTP/1.1 404 Not Found");
 			// resp = malloc(strlen(bob));
 		} else if (!isError) {
 			strcpy(resp, "HTTP/1.1 200 OK");
 		}
 
+		// give me len as a string
+		sprintf(len, "%d", getFileLen(req, file));
+
 		strcat(resp, "\nServer: lisod/1.0");
-		strcat(resp, "\nConnection: keep-alive"); // \r\n
+		strcat(resp, "\nConnection: keep-alive");
 		strcat(resp, "\nContent-length: ");
-		printf("%s\n", "holla1");
-		char lenStr[10];
-		sprintf(lenStr, "%d", len);
-		strcat(resp, lenStr);
-		printf("%s\n", "holla2");
+		strcat(resp, len);
 		strcat(resp, "\nContent-Type: ");
 		strcat(resp, getFileType(req));
-		printf("%s\n", "holla3");
 		strcat(resp, "\nDate: ");
 		strcat(resp, getDate());
-		printf("%s\n", "holla4");
 		strcat(resp, "\nLast-Modified: ");
 		strcat(resp, getLastMod(req, resp));
-		printf("%s\n", "holla5");
 		strcat(resp, "\r\n");
+		// printf("%s\n", resp); strcat(resp, "\n"); return resp;
 	}
-	printf("%s\n", "outside");
+	// free(fname);
 	return resp;
 }
 
@@ -134,15 +135,5 @@ char *parseMagic(char *buf, Request *req, char *sender) {
 		printf("WTF did you send me?\n");
 		// not valid return 405: Method not allowed
 	}
-	printf("%s\n", "safely here");
-	// return "avash";
 	return sender;
-	// do something with send, namely send it
-		//  404, 'Not Found'
-	    //  411, 'Length Required'
-	    //  500, 'Not Found'
-	    //  505, 'HTTP Version not supported'
-
-    // Request *request = parse(buf, sizeof(buf), i);
-    // printf ("%s \n", get_header_value(request, "User-Agent"));
 }
